@@ -1,0 +1,33 @@
+import os
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
+
+# Get bot token from Railway environment variables
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+async def owner(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Find and show the group owner."""
+    chat = update.effective_chat
+
+    if chat.type not in ["group", "supergroup"]:
+        await update.message.reply_text("❌ This command only works in groups.")
+        return
+
+    admins = await context.bot.get_chat_administrators(chat.id)
+    for admin in admins:
+        if admin.status == "creator":
+            user = admin.user
+            name = user.full_name
+            username = f"@{user.username}" if user.username else "(no username)"
+            await update.message.reply_text(f"👑 Group Owner: {name} {username}")
+            return
+
+    await update.message.reply_text("⚠️ Could not find group owner.")
+
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("owner", owner))
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
